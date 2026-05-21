@@ -371,8 +371,8 @@
       <div class="card">
         <div class="card-title">📜 Historique</div>
         <div class="search-bar">
-          <input class="search-input" id="search-input" placeholder="🔍 Rechercher..." oninput="renderTxAll()">
-          <select class="filter-select" id="filter-cat" onchange="renderTxAll()">
+          <input class="search-input" id="search-input" placeholder="🔍 Rechercher..." oninput="window.renderTxAll()">
+          <select class="filter-select" id="filter-cat" onchange="window.renderTxAll()">
             <option value="">Toutes catégories</option>
             <option value="alimentation">🛒 Alimentation</option><option value="transport">🚇 Transport</option>
             <option value="logement">🏠 Logement</option><option value="sante">💊 Santé</option>
@@ -380,7 +380,7 @@
             <option value="restaurant">🍽️ Restaurant</option><option value="salaire">💼 Salaire</option>
             <option value="shopping">🛍️ Shopping</option><option value="beaute">💄 Beauté</option><option value="autre">📦 Autre</option>
           </select>
-          <select class="filter-select" id="filter-type" onchange="renderTxAll()">
+          <select class="filter-select" id="filter-type" onchange="window.renderTxAll()">
             <option value="">Tout</option><option value="expense">Dépenses</option><option value="income">Revenus</option>
           </select>
         </div>
@@ -724,6 +724,7 @@ window.addTransaction=function(){
   scheduleSave();renderTxAll();renderDash();toast('✨ Transaction ajoutée');
 };
 window.askDelTx=function(id){askConfirm('Supprimer cette transaction ?',()=>{transactions=transactions.filter(t=>t.id!==id);scheduleSave();renderTxAll();renderDash();toast('Transaction supprimée');});};
+window.renderTxAll=function(){return renderTxAll();};
 function renderTxAll(){
   const searchEl=document.getElementById('search-input');
   const fcEl=document.getElementById('filter-cat');
