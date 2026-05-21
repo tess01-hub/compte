@@ -696,14 +696,20 @@ function renderDash(){
   }).join('');
 
   const recent=[...transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
-  document.getElementById('tx-dash').innerHTML=recent.length?recent.map(t=>txH(t,false)).join(''):'<div class="empty"><div class="empty-icon">🧾</div>Aucune transaction</div>';
+  document.getElementById('tx-dash').innerHTML=recent.length?recent.map(t=>txH(t,'dashonly')).join(''):'<div class="empty"><div class="empty-icon">🧾</div>Aucune transaction</div>';
 }
 
 /* ── TX HTML ── */
+// del: true = historique complet (modifier + supprimer), 'dashonly' = tableau de bord (supprimer seulement)
 function txH(t,del){
   const s=t.type==='expense'?'-':'+',cls=t.type==='expense'?'neg':'pos',bg=t.type==='expense'?'var(--red-bg)':'var(--green-bg)';
   const rec=t.recurrent?'<span class="recurrent-badge">♻️</span>':(t.autoAdded?'<span class="recurrent-badge" style="background:var(--green-bg);color:#1a7a50">♻️ auto</span>':'');
-  const btns=del?`<div class="tx-actions"><button class="tx-btn" onclick="window.openEdit(${t.id})" title="Modifier"><i class="ti ti-pencil"></i></button><button class="tx-btn" onclick="window.askDelTx(${t.id})" title="Supprimer"><i class="ti ti-trash"></i></button></div>`:'';
+  let btns='';
+  if(del===true){
+    btns=`<div class="tx-actions"><button class="tx-btn" onclick="window.openEdit(${t.id})" title="Modifier"><i class="ti ti-pencil"></i></button><button class="tx-btn" onclick="window.askDelTx(${t.id})" title="Supprimer"><i class="ti ti-trash"></i></button></div>`;
+  } else if(del==='dashonly'){
+    btns=`<div class="tx-actions"><button class="tx-btn" onclick="window.askDelTx(${t.id})" title="Supprimer"><i class="ti ti-trash"></i></button></div>`;
+  }
   return`<div class="tx-item"><div class="tx-ico" style="background:${bg}">${CE[t.cat]||'💰'}</div><div class="tx-info"><div class="tx-name">${t.desc}${rec}</div><div class="tx-meta">${CL[t.cat]||t.cat} · ${t.date}</div></div><div class="tx-amt ${cls}">${s}${t.amount.toFixed(2)} €</div>${btns}</div>`;
 }
 
@@ -719,14 +725,26 @@ window.addTransaction=function(){
 };
 window.askDelTx=function(id){askConfirm('Supprimer cette transaction ?',()=>{transactions=transactions.filter(t=>t.id!==id);scheduleSave();renderTxAll();renderDash();toast('Transaction supprimée');});};
 function renderTxAll(){
-  const search=document.getElementById('search-input')?.value.toLowerCase()||'';
-  const fc=document.getElementById('filter-cat')?.value||'';
-  const ft=document.getElementById('filter-type')?.value||'';
+  const searchEl=document.getElementById('search-input');
+  const fcEl=document.getElementById('filter-cat');
+  const ftEl=document.getElementById('filter-type');
+  const search=searchEl?searchEl.value.trim().toLowerCase():'';
+  const fc=fcEl?fcEl.value:'';
+  const ft=ftEl?ftEl.value:'';
   let all=[...transactions].sort((a,b)=>b.date.localeCompare(a.date));
-  if(search)all=all.filter(t=>t.desc.toLowerCase().includes(search)||(CL[t.cat]||'').toLowerCase().includes(search));
+  if(search){
+    all=all.filter(t=>{
+      const descMatch=t.desc.toLowerCase().includes(search);
+      const catMatch=(CL[t.cat]||t.cat||'').toLowerCase().includes(search);
+      const dateMatch=(t.date||'').includes(search);
+      const amtMatch=String(t.amount).includes(search);
+      return descMatch||catMatch||dateMatch||amtMatch;
+    });
+  }
   if(fc)all=all.filter(t=>t.cat===fc);
   if(ft)all=all.filter(t=>t.type===ft);
-  document.getElementById('tx-all').innerHTML=all.length?all.map(t=>txH(t,true)).join(''):'<div class="empty"><div class="empty-icon">🔍</div>Aucune transaction trouvée</div>';
+  const el=document.getElementById('tx-all');
+  if(el)el.innerHTML=all.length?all.map(t=>txH(t,true)).join(''):'<div class="empty"><div class="empty-icon">🔍</div>Aucune transaction trouvée</div>';
 }
 
 /* ── BUDGET ── */
