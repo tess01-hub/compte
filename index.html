@@ -231,6 +231,15 @@
     .theme-circle{width:32px;height:32px;border-radius:50%;flex-shrink:0;}
 
     /* ALERT BADGE */
+    #login-screen input[type="text"],
+    #login-screen input[type="password"] {
+      background:var(--bg-input);border:0.5px solid var(--border-2);border-radius:10px;
+      padding:11px 12px;font-size:16px;color:var(--text);font-family:var(--font-body);
+      outline:none;-webkit-appearance:none;appearance:none;width:100%;
+      transition:border-color 0.15s,box-shadow 0.15s;
+    }
+    #login-screen input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-bg);}
+    #login-screen .fg label{font-size:11px;font-weight:700;color:var(--text-2);letter-spacing:0.05em;text-transform:uppercase;display:block;margin-bottom:5px;}
     .alert-item{background:var(--amber-bg);border:0.5px solid var(--amber);border-radius:12px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);}
     .alert-item.danger{background:var(--red-bg);border-color:var(--red);}
   </style>
@@ -277,6 +286,35 @@
       <div class="fg"><label>Date</label><input type="date" id="edit-date"></div>
     </div>
     <button class="btn-add" onclick="saveEdit()">✨ Enregistrer les modifications</button>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;position:fixed;inset:0;z-index:600;background:var(--bg);background-image:var(--bg-pattern);align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="background:var(--bg-card);border-radius:24px;box-shadow:0 8px 40px rgba(0,0,0,0.12);padding:2rem 2rem 1.8rem;width:100%;max-width:380px;border:0.5px solid var(--border);">
+    <div style="text-align:center;margin-bottom:1.8rem;">
+      <div style="width:56px;height:56px;border-radius:18px;background:linear-gradient(135deg,var(--primary),var(--primary-2));display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;">💕</div>
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:700;">Mon Budget</div>
+      <div style="font-size:13px;color:var(--text-2);margin-top:4px;">Connectez-vous pour accéder à vos données</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="fg"><label>Identifiant</label><input type="text" id="login-id" placeholder="Votre identifiant" autocomplete="username" autocapitalize="none"></div>
+      <div class="fg"><label>Mot de passe</label>
+        <div style="position:relative;">
+          <input type="password" id="login-pwd" placeholder="Votre mot de passe" autocomplete="current-password" style="width:100%;padding-right:44px;">
+          <button onclick="window.togglePwd()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-3);" id="pwd-eye">👁️</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+        <input type="checkbox" id="remember-me" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;">
+        <label for="remember-me" style="font-size:13px;color:var(--text-2);cursor:pointer;">Se souvenir de moi</label>
+      </div>
+      <div id="login-error" style="font-size:13px;color:var(--red);display:none;background:var(--red-bg);padding:8px 12px;border-radius:8px;"></div>
+      <button onclick="window.doLogin()" id="login-btn" style="margin-top:6px;padding:13px;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;font-family:var(--font-body);cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.15);">
+        ✨ Se connecter
+      </button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text-3);margin-top:1.2rem;">Application personnelle — accès restreint</div>
   </div>
 </div>
 
@@ -476,6 +514,11 @@
         <div class="card-title">🔔 Notifications budgets</div>
         <div style="font-size:13px;color:var(--text-2);line-height:1.6;">Les alertes s'affichent automatiquement sur le tableau de bord quand vous approchez ou dépassez un budget. Le seuil d'alerte se configure dans chaque budget.</div>
       </div>
+      <div class="card">
+        <div class="card-title">👤 Compte</div>
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;">Connecté en tant que : <strong id="logged-user-label" style="color:var(--primary)">—</strong></div>
+        <button onclick="window.doLogout()" style="padding:11px 20px;background:var(--red-bg);color:var(--red);border:0.5px solid var(--red);border-radius:10px;font-size:14px;font-weight:600;font-family:var(--font-body);cursor:pointer;">🚪 Se déconnecter</button>
+      </div>
     </div>
 
   </main>
@@ -495,6 +538,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyCGNSMcbuRar9TwZnWw3w4l_kJOIDrq5RY",
@@ -506,7 +550,8 @@ const firebaseConfig = {
 };
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
-const DOC=doc(db,"budget","data");
+const auth=getAuth(app);
+let DOC=null; // sera défini après connexion selon l'utilisateur
 
 let transactions=[],budgets=[],debts=[],nextId=1,saveTimer=null;
 let currentYear=new Date().getFullYear(), currentMonth=new Date().getMonth()+1;
@@ -856,11 +901,91 @@ window.exportJSON=function(){
   toast('✅ Export JSON téléchargé');
 };
 
+/* ── AUTH ── */
+// Table de correspondance identifiant → email Firebase
+const USER_MAP = {
+  'kpaulvaiche': 'kpaulvaiche@monbudget.app',
+  'ymaala':      'ymaala@monbudget.app'
+};
+const USER_NAMES = {
+  'kpaulvaiche@monbudget.app': 'kpaulvaiche',
+  'ymaala@monbudget.app':      'ymaala'
+};
+
+window.togglePwd=function(){
+  const inp=document.getElementById('login-pwd');
+  const eye=document.getElementById('pwd-eye');
+  if(inp.type==='password'){inp.type='text';eye.textContent='🙈';}
+  else{inp.type='password';eye.textContent='👁️';}
+};
+
+window.doLogin=async function(){
+  const id=document.getElementById('login-id').value.trim().toLowerCase();
+  const pwd=document.getElementById('login-pwd').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  errEl.style.display='none';
+  if(!id||!pwd){errEl.textContent='Remplissez tous les champs.';errEl.style.display='block';return;}
+  const email=USER_MAP[id];
+  if(!email){errEl.textContent='Identifiant inconnu.';errEl.style.display='block';return;}
+  btn.textContent='Connexion...';btn.disabled=true;
+  try{
+    await signInWithEmailAndPassword(auth,email,pwd);
+    if(document.getElementById('remember-me').checked){
+      localStorage.setItem('mb_saved_id',id);
+    } else {
+      localStorage.removeItem('mb_saved_id');
+    }
+  }catch(e){
+    errEl.textContent='Identifiant ou mot de passe incorrect.';
+    errEl.style.display='block';
+  }
+  btn.textContent='✨ Se connecter';btn.disabled=false;
+};
+
+// Enter key on login
+document.getElementById('login-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')window.doLogin();});
+document.getElementById('login-id').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pwd').focus();});
+
+window.doLogout=async function(){
+  await signOut(auth);
+  transactions=[];budgets=[];debts=[];nextId=1;
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('loading').classList.add('hidden');
+  toast('👋 Déconnecté');
+};
+
+// Auth state listener — point d'entrée principal
+onAuthStateChanged(auth, async(user)=>{
+  if(user){
+    // Connecté
+    document.getElementById('login-screen').style.display='none';
+    const username=USER_NAMES[user.email]||user.email;
+    const label=document.getElementById('logged-user-label');
+    if(label)label.textContent=username;
+    // Données séparées par utilisateur
+    DOC=doc(db,'budget',user.uid);
+    const savedTheme=localStorage.getItem('mb_theme')||'rose';
+    window.setTheme(savedTheme);
+    document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
+    await loadData();
+  } else {
+    // Déconnecté — afficher login
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('loading').classList.add('hidden');
+    // Pré-remplir si identifiant sauvegardé
+    const savedId=localStorage.getItem('mb_saved_id');
+    if(savedId){
+      document.getElementById('login-id').value=savedId;
+      document.getElementById('remember-me').checked=true;
+      document.getElementById('login-pwd').focus();
+    }
+  }
+});
+
 /* ── INIT ── */
 const savedTheme=localStorage.getItem('mb_theme')||'rose';
 window.setTheme(savedTheme);
-document.getElementById('tx-date').value=new Date().toISOString().split('T')[0];
-loadData();
 </script>
 </body>
 </html>
